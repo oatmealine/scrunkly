@@ -53,9 +53,9 @@ end
   - [x] [x] expression [char] [expression]
   - [x] [x] goto [label]
   - [ ] [ ] goto [filename]
-  - [ ] [ ] var [name] [value]
+  - [x] [x] var [name] [value]
   - [x] [x] meta [name] [true | false]
-  - [ ] [ ] if (!)(%)[cond] [expr]
+  - [ ] [ ] if (!)[cond] [expr]
 
   - [x] [x] [string] -> [label]
   - [x] [x] [string] ->
@@ -327,8 +327,7 @@ function commandRunners.var(state, data, opts, iter, label, idx)
   if flushSay(state, opts, iter, label, idx) then
     return false
   end
-  -- TODO
-  error('NYI')
+  state.variables[data.name] = data.value
   return true
 end
 
@@ -506,8 +505,10 @@ end
 
 function commandParsers.var(args)
   if #args ~= 2 then error('expected 2 arguments, got ' .. #args, 2) end
-  -- TODO
-  error('NYI')
+  return {
+    name = args[1],
+    value = args[2]
+  }
 end
 
 
