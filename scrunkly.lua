@@ -69,7 +69,7 @@ end
 ---@field characters scrunklyCharacter[]?
 ---@field meta table<string, any>?
 ---@field startLabel string?
----@field openDialog fun(text: table, meta: table<string, any>, choices: table<string, any>, callback: fun(choice: number)): nil
+---@field openDialog fun(text: table, meta: table<string, any>, choices: table<string, any>, callback: fun(choice: number?)): nil
 
 ---@class scrunklyCharacter
 ---@field name string
@@ -358,8 +358,9 @@ local function bytecodeToFunction(labels)
 
       local command = labels[label][idx]
       if not command then
-        flushSay(state, opts, iter, label, idx)
-        if callback then callback(state.variables) end
+        if flushSay(state, opts, iter, label, idx) then
+          if callback then callback(state.variables) end
+        end
         return
       end
 

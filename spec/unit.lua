@@ -35,6 +35,17 @@ describe('scrunkly', function()
   end
 
   describe('parsing and building', function()
+    it('should ignore comments', function()
+      assert.has_no.errors(function()
+        scrunkly.build([=[
+          -- [invalid] label
+
+          -- invalid command kajshg "
+
+          say "test" -- more invalid syntax ' 3
+        ]=])
+      end)
+    end)
     it('should compile labels', function()
       assert.has_no.errors(function()
         scrunkly.build([=[
