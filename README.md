@@ -75,6 +75,32 @@ end)
 
 The above is actually all you need to build a CLI runner for `.scrunkly` files!
 
+## Language
+
+Typically, `scrunkly` scripts are stored in `.scrunkly` files, optionally alongside `.lua` files in the same folders that define default values for options:
+
+- `test.scrunkly`
+  ```lua
+  say "hello %{name}!"
+  call externFunc
+  ```
+- `test.lua`
+  ```lua
+  return {
+    variables = {
+      name = 'oatmealine',
+      externFunc = function()
+        print('something happened!')
+      end
+    }
+  }
+  ```
+
+You are free to structure them however you want to, however - `scrunkly` gives you the power to define your setup however you wish to, adapting to whichever sandboxing limitations the program you're running it in might impose upon you.
+
+> **Note**
+> A good example of this is in NotITG - files cannot be conventionally accessed through the API, but you can still utilize all of `scrunkly`'s features by manually passing in code and options without following the standard convention.
+
 ## Used by
 
 - [Cathy Ray's Tubular Training](https://oatmealine.itch.io/cathy-rays-tubular-training) (2023, Love2D)
