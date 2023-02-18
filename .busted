@@ -1,0 +1,8 @@
+return {
+  _all = {
+    --verbose = true
+  },
+  default = {
+    ROOT = {'spec/unit.lua'}
+  }
+}
