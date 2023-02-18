@@ -3,7 +3,9 @@ local scrunkly = require 'scrunkly'
 scrunkly.logger = nil
 
 local built = scrunkly.build([[
-  say "%{name} is very cool"
+  -- comments start with --, like in lua
+  
+  say "%{name} is very cool" -- references a variable named `name`
   say "what do you think?"
   
   "it's cool" -> "cool"
@@ -20,7 +22,7 @@ local built = scrunkly.build([[
   
   [sucks]
   say "what????? i will delete you immediately"
-  call deleteUserImmediately
+  call deleteUserImmediately -- calls a variable named `deleteUserImmediately`
   say "if you're still here, what are you doing?"
   say "regardless..."
   goto "end"

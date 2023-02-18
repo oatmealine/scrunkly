@@ -422,7 +422,7 @@ local function parseArguments(str)
     elseif not escaping and char == '\\' then
       escaping = true
     else
-      if escaping and not (char == '"' or char == '\'' or char == '\\') then
+      if escaping and not (char == '"' or char == '\'' or char == '\\' or char == '-') then
         error('invalid escaped character: \'\\' .. char .. '\'', 2)
       end
       escaping = false
@@ -526,9 +526,12 @@ function M.build(code)
   for line in string.gmatch(code, '%s*([^\n\r]*)%s*[\n\r]?') do
     lineNumber = lineNumber + 1
 
-    if string.sub(line, 1, 2) == '--' then
-      -- do nothing
-    elseif string.sub(line, 1, 1) == '[' and string.sub(line, -1, -1) == ']' then
+    local _, _, lineStripped = string.find(line, '(.-)(%-%-.*)')
+    if lineStripped then
+      line = lineStripped
+    end
+
+    if string.sub(line, 1, 1) == '[' and string.sub(line, -1, -1) == ']' then
       local labelName = string.sub(line, 2, -2)
       currentLabel = labelName
     else
