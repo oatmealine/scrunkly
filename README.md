@@ -6,7 +6,9 @@
 
 </center>
 
-**`scrunkly` is still in beta. While usable, you will be offered very little support and APIs will, very definitely, frequently shift around.** "Beta" does not mean "designed and currently being tested", "beta" means "mostly functioning"!
+> **Warning**
+> 
+> **`scrunkly` is still in beta. While usable, you will be offered very little support and APIs will, very definitely, frequently shift around.** "Beta" does not mean "designed and currently being tested", "beta" means "mostly functioning"!
 
 `scrunkly` is a visual novel, dialog and overall sequential text processing engine, utilizing a custom script-like language:
 
@@ -99,6 +101,7 @@ Typically, `scrunkly` scripts are stored in `.scrunkly` files, optionally alongs
 You are free to structure them however you want to, however - `scrunkly` gives you the power to define your setup however you wish to, adapting to whichever sandboxing limitations the program you're running it in might impose upon you.
 
 > **Note**
+> 
 > A good example of this is in NotITG - files cannot be conventionally accessed through the API, but you can still utilize all of `scrunkly`'s features by manually passing in code and options without following the standard convention.
 
 ## Used by
