@@ -73,7 +73,7 @@ end
 
 ---@class scrunklyCharacter
 ---@field name string
----@field sprites table<string, love.Image>
+---@field sprites table<string, any>
 
 ---@generic T table<any>
 ---@param tab T
@@ -388,7 +388,7 @@ local function parseString(str)
   for full, plain, _, arg, plain2 in string.gmatch(str, '(([^%%]*)(%%{(.-)})(([^%%]*)))') do
     idx = idx + #full
     if plain ~= '' then table.insert(args, plain) end
-    local chunk, err = load('return (' .. arg .. ')')
+    local chunk, err = (loadstring or load)('return (' .. arg .. ')')
     if err then error('error parsing expression: ' .. err, 2) end
     table.insert(args, chunk)
     if plain2 ~= '' then table.insert(args, plain2) end

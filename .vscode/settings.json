@@ -3,5 +3,6 @@
   "Lua.workspace.library": [
     "/usr/share/lua/5.3/busted/",
     "/usr/share/lua/5.3/luassert/"
-  ]
+  ],
+  "Lua.runtime.version": "LuaJIT"
 }
