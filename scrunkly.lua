@@ -5,8 +5,38 @@ local M = {
   VERSION = "2.0.0-beta.1",
 }
 
--- temporary
-require 'src.lib.util'
+M.logger = print
+
+local function print(...)
+  if M.logger then
+    M.logger(...)
+  end
+end
+
+local _setfenv = setfenv
+local function setfenv(f, table)
+  if _setfenv then
+    return _setfenv(f, table)
+  else
+    -- https://leafo.net/guides/setfenv-in-lua52-and-above.html
+    local i = 1
+    while true do
+      local name = debug.getupvalue(f, i)
+      if name == "_ENV" then
+        debug.upvaluejoin(f, i, (function()
+          return table
+        end), 1)
+        break
+      elseif not name then
+        break
+      end
+
+      i = i + 1
+    end
+
+    return f
+  end
+end
 
 --[=[
     parser
@@ -45,6 +75,109 @@ require 'src.lib.util'
 ---@field name string
 ---@field sprites table<string, love.Image>
 
+---@generic T table<any>
+---@param tab T
+---@return T
+local function shallowcopy(tab)
+  local new = {}
+  for k,v in pairs(tab) do
+    new[k] = v
+  end
+  return new
+end
+
+---@generic T table<any>
+---@param tab T
+---@return T
+local function deepcopy(tab)
+  local new = {}
+  for k, v in pairs(tab) do
+    if type(v) == 'table' then
+      new[k] = deepcopy(v)
+    else
+      new[k] = v
+    end
+  end
+  return new
+end
+
+---@param o any
+---@param r number?
+---@return string
+local function fullDump(o, r)
+  if type(o) == 'table' and (not r or r > 0) then
+    local s = '{'
+    local first = true
+    for k,v in pairs(o) do
+      if not first then
+        s = s .. ', '
+      end
+      local nr = nil
+      if r then
+        nr = r - 1
+      end
+      if type(k) ~= 'number' then
+        s = s .. tostring(k) .. ' = ' .. fullDump(v, nr)
+      else
+        s = s .. fullDump(v, nr)
+      end
+      first = false
+    end
+    return s .. '}'
+  elseif type(o) == 'string' then
+    return '"' .. o .. '"'
+  else
+    return tostring(o)
+  end
+end
+
+---@generic A table<any>
+---@generic B table<any>
+---@param tab1 A
+---@param tab2 B
+---@return B
+local function merge(tab1, tab2)
+  local tab = {}
+  for k, v in pairs(tab1) do
+    tab[k] = v
+  end
+  for k, v in pairs(tab2) do
+    if type(v) == 'table' and type(tab[k]) == 'table' then
+      tab[k] = merge(tab[k], v)
+    elseif v ~= nil then
+      tab[k] = v
+    end
+  end
+  return tab
+end
+
+M.safeEnv = {
+  coroutine = shallowcopy(coroutine),
+  assert = assert,
+  tostring = tostring,
+  tonumber = tonumber,
+  rawget = rawget,
+  xpcall = xpcall,
+  ipairs = ipairs,
+  print = print,
+  pcall = pcall,
+  pairs = pairs,
+  error = error,
+  rawequal = rawequal,
+  loadstring = loadstring,
+  rawset = rawset,
+  unpack = unpack,
+  table = shallowcopy(table),
+  next = next,
+  math = shallowcopy(math),
+  load = load,
+  select = select,
+  string = shallowcopy(string),
+  type = type,
+  getmetatable = getmetatable,
+  setmetatable = setmetatable
+}
+
 local function executeString(str, state)
   if not str[2] then -- variable reference
     return state.variables[str]
@@ -54,13 +187,12 @@ local function executeString(str, state)
       if type(chunk) == 'string' then
         table.insert(res, chunk)
       else
-        table.insert(res, chunk())
+        table.insert(res, tostring(setfenv(chunk, merge(M.safeEnv, state.variables))()))
       end
     end
     return table.concat(res, '')
   end
 end
-
 
 local function flushSay(state, opts, iter, label, idx)
   if #state.toSay == 0 then return false end
@@ -117,7 +249,7 @@ function commandRunners.randomsay(state, data, opts, iter, label, idx)
   return true
 end
 
-function commandRunners.goto(state, data, opts, iter, label, idx)
+commandRunners['goto'] = function(state, data, opts, iter, label, idx)
   local newLabel = executeString(data.target, state)
   assert(newLabel ~= nil)
   iter(newLabel, 1)
@@ -253,7 +385,7 @@ end
 local function parseString(str)
   local args = {}
   local idx = 0
-  for full, plain, _, arg, plain2 in string.gmatch(str, '(([^%%]*)(%%{(.-)}))(([^%%]*))') do
+  for full, plain, _, arg, plain2 in string.gmatch(str, '(([^%%]*)(%%{(.-)})(([^%%]*)))') do
     idx = idx + #full
     if plain ~= '' then table.insert(args, plain) end
     local chunk, err = load('return (' .. arg .. ')')
@@ -355,7 +487,7 @@ end
 
 function commandParsers.meta(args)
   if #args ~= 2 then error('expected 2 arguments, got ' .. #args, 2) end
-  if args[2][1] ~= 'true' or args[2][1] ~= 'false' then error('expected true or false, got ' .. args[2][1], 2) end
+  if args[2][1] ~= 'true' and args[2][1] ~= 'false' then error('expected true or false, got ' .. args[2][1], 2) end
   if args[2][2] then error('expected boolean, got string', 2) end
   return {
     name = args[1],
@@ -379,7 +511,7 @@ end
 
 
 ---@param code string
----@return fun(options: scrunklyOptions?, onFinish: fun(flags: table<string, boolean>)?)
+---@return fun(options: scrunklyOptions?, onFinish: fun(variables: table<string, any>)?)
 function M.build(code)
   local calling = debug.getinfo(2, 'lS')
   local function err(lineNumber, msg)
@@ -402,17 +534,26 @@ function M.build(code)
       labels[currentLabel] = labels[currentLabel] or {}
       local commands = labels[currentLabel]
 
-      local command, args = string.match(line, '^([^%s]+)(.*)')
-      if command then
-        local parsed = parseArguments(args)
+      local ok, parsed = pcall(parseArguments, line)
+      if not ok then
+        err(lineNumber, parsed)
+      end
 
-        local commandParser = commandParsers[command]
+      if parsed[1] then
+        local command
+        local commandParser
 
-        if parsed[1] and parsed[1][1] == '->' and not parsed[1][2] then
-          table.remove(parsed, 1)
-          table.insert(parsed, 1, parseArguments(command)[1]) -- todo: don't ignore rest of output? somehow? this feels like an extreme edge case
+        if parsed[2] and parsed[2][1] == '->' and not parsed[2][2] then
+          table.remove(parsed, 2)
           commandParser = commandParsers.choice
           command = 'choice'
+        else
+          local commandObj = table.remove(parsed, 1)
+          if commandObj[2] then
+            err(lineNumber, 'expected command name, got string')
+          end
+          command = commandObj[1]
+          commandParser = commandParsers[command]
         end
         if commandParser then
           local ok, res = pcall(commandParser, parsed)
@@ -425,7 +566,7 @@ function M.build(code)
             err(lineNumber, command .. ': ' .. res)
           end
         else
-          err(lineNumber, 'unknown command \'' .. command .. '\'', 2)
+          err(lineNumber, 'unknown command \'' .. command .. '\'')
         end
       end
     end
@@ -433,75 +574,5 @@ function M.build(code)
 
   return bytecodeToFunction(labels)
 end
-
-math.randomseed(os.time())
-
-local examples = {
-  [[
-    say "hewwo"
-    say "i've got a question for you..."
-    goto "%{'prompt'}"
-    
-    [prompt]
-    say "how many cheese? hint: it's %{math.random(1, 10)}"
-    "one" -> "prompt1"
-    "two" -> "prompt2"
-    "more" ->
-    -- it kinda "falls back" if nothing is provided as the result of a choice
-    say ":D correct"
-    -- upon reaching the end itll exit out
-    
-    [prompt1]
-    call externalFunction
-    say "mm. not enough"
-    goto "prompt"
-    
-    [prompt2]
-    say "getting there..."
-    goto "prompt"
-  ]],
-  [[
-    expression "cheese" "default"
-    character "cheese"
-    say "Let's restart and try again!"
-    say "Here's a useful tip I should've probably told you earlier:"
-    goto "tip%{math.floor(math.random() * 5) + 1}"
-
-    [tip1]
-    say "As fun as it is to use your [bomb] to get a bunch of score, it might be wiser to save it for when you're overwhelmed!"
-
-    [tip2]
-    say "Your hitbox will show up for a moment when you're [grazing]. Make sure to get a feel for how big it is!"
-
-    [tip3]
-    say "Remember that enemy spawns will always be the same between games - if a strategy works once, it'll always work!"
-
-    [tip4]
-    say "You get a [bomb] once every **20,000** score points. Make sure to use that to your advantage!"
-
-    [tip5]
-    say "Most enemies will only become an issue if you let them live for long enough - make sure to get rid of them as soon as possible to avoid getting overwhelmed!"
-  ]]
-}
-
-M.build(examples[2])({
-  openDialog = function(text, meta, choices, callback)
-    print('> ' .. fullDump(text), fullDump(choices), fullDump(meta))
-    callback(math.random(1, 3))
-  end,
-  variables = {
-    externalFunction = function(vars)
-      print('EXTERN FUNC: ', fullDump(vars))
-    end
-  },
-  characters = {
-    cheese = {
-      name = 'Cheese',
-      sprites = {
-        default = {}
-      }
-    }
-  }
-})
 
 return M
