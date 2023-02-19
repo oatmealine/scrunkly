@@ -85,6 +85,7 @@ The above is actually all you need to build a CLI runner for `.scrunkly` files!
 | Lua 5.1        | ✔️    | ✔️          | ✔️ |
 | Lua 5.2        | ✔️    | ✔️[^2]      | ✔️ |
 | Lua 5.3        | ✔️    | ✔️[^2]      | ✔️ |
+| Lua 5.4        | ✔️    | ✔️[^2]      | ✔️ |
 | NotITG Lua[^1] | ✔️    | ✔️          | ❌ |
 
 [^1]: NotITG Lua is 5.0.3 with some syntax and features ported over from 5.1, preserving backwards compatibility. Notably, `#`, `%`, long strings (`[=[ ... ]=]`) and some [5.0 bugfixes](https://www.lua.org/bugs.html#5.0.3). If true, pure 5.0 support is ever required, I do not mind doing so.
