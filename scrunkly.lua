@@ -5,11 +5,14 @@ local M = {
   VERSION = "2.0.0-beta.1",
 }
 
+local gmatch = string.gmatch or string.gfind
+local unpack = unpack or table.unpack
+
 M.logger = print
 
 local function print(...)
   if M.logger then
-    M.logger(...)
+    M.logger(unpack(arg))
   end
 end
 
@@ -187,7 +190,8 @@ local function executeString(str, state)
       if type(chunk) == 'string' then
         table.insert(res, chunk)
       else
-        table.insert(res, tostring(setfenv(chunk, merge(M.safeEnv, state.variables))()))
+        setfenv(chunk, merge(M.safeEnv, state.variables))
+        table.insert(res, tostring(chunk()))
       end
     end
     return table.concat(res, '')
@@ -341,7 +345,7 @@ local function bytecodeToFunction(labels)
 
     local state = {
       meta = deepcopy(opts.meta or {}),
-      variables = deepcopy(opts.variables or {}),
+      variables = opts.variables or {},
       characters = {},
       expressions = {},
       currentCharacter = nil,
@@ -385,7 +389,7 @@ end
 local function parseString(str)
   local args = {}
   local idx = 0
-  for full, plain, _, arg, plain2 in string.gmatch(str, '(([^%%]*)(%%{(.-)})(([^%%]*)))') do
+  for full, plain, _, arg, plain2 in gmatch(str, '(([^%%]*)(%%{(.-)})(([^%%]*)))') do
     idx = idx + #full
     if plain ~= '' then table.insert(args, plain) end
     local chunk, err = (loadstring or load)('return (' .. arg .. ')')
@@ -524,7 +528,7 @@ function M.build(code)
   local labels = {}
 
   local lineNumber = 0
-  for line in string.gmatch(code, '%s*([^\n\r]*)%s*[\n\r]?') do
+  for line in gmatch(code, '%s*([^\n\r]*)%s*[\n\r]?') do
     lineNumber = lineNumber + 1
 
     local _, _, lineStripped = string.find(line, '(.-)(%-%-.*)')
