@@ -77,6 +77,22 @@ end)
 
 The above is actually all you need to build a CLI runner for `.scrunkly` files!
 
+## Compatibility
+
+| Version        | Base | Sandboxing | [CI](https://github.com/oatmealine/scrunkly/actions/workflows/busted.yml) |
+| ----------     | ---- | ---------- | -- |
+| LuaJIT         | ✔️    | ✔️          | ✔️ |
+| Lua 5.1        | ✔️    | ✔️          | ✔️ |
+| Lua 5.2        | ✔️    | ✔️[^2]      | ✔️ |
+| Lua 5.3        | ✔️    | ✔️[^2]      | ✔️ |
+| NotITG Lua[^1] | ✔️    | ✔️          | ❌ |
+
+[^1]: NotITG Lua is 5.0.3 with some syntax and features ported over from 5.1, preserving backwards compatibility. Notably, `#`, `%`, long strings (`[=[ ... ]=]`) and some [5.0 bugfixes](https://www.lua.org/bugs.html#5.0.3). If true, pure 5.0 support is ever required, I do not mind doing so.
+
+[^2]: `setfenv`, required for sandboxing, is missing in 5.2+. [An alternative](https://leafo.net/guides/setfenv-in-lua52-and-above.html) that is implemented with `debug` is used instead on those versions; this means you may not have access to it in your environment.
+
+`scrunkly` does not require much from your environment - `io`, `debug` and other potentially insecure modules which many Lua environments disable are never used, and it's up to you to utilize them if necessary.
+
 ## Language
 
 Typically, `scrunkly` scripts are stored in `.scrunkly` files, optionally alongside `.lua` files in the same folders that define default values for options:
