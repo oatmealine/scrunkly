@@ -124,4 +124,5 @@ You are free to structure them however you want to, however - `scrunkly` gives y
 ## Used by
 
 - [Cathy Ray's Tubular Training](https://oatmealine.itch.io/cathy-rays-tubular-training) (2023, Love2D)
+- [Egg Related Videogame](https://maggiemagius.itch.io/egg-related-videogame) (2024, Love2D)
 - [████████████](https://yugoslavia.best/c/) (????, NotITG)
